@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>老何</title>
+  <title>小阳</title>
   <style>
     :root {
       --bg-1: #07111f;
@@ -14,9 +14,9 @@
       --muted: #cbd5e1;
       --green: #22c55e;
       --green-2: #4ade80;
-      --green-3: #166534;
       --accent: #38bdf8;
       --danger: #fb7185;
+      --gold: #fbbf24;
       --shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
     }
 
@@ -41,9 +41,7 @@
       touch-action: manipulation;
     }
 
-    .wrap {
-      width: min(96vw, 560px);
-    }
+    .wrap { width: min(96vw, 560px); }
 
     .card {
       position: relative;
@@ -74,9 +72,7 @@
       z-index: 1;
     }
 
-    .title-box {
-      text-align: left;
-    }
+    .title-box { text-align: left; }
 
     .badge {
       display: inline-flex;
@@ -102,8 +98,14 @@
       color: var(--muted);
     }
 
+    .status-bar {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      min-width: 230px;
+    }
+
     .score-box {
-      min-width: 110px;
       padding: 12px 14px;
       border-radius: 18px;
       background: rgba(255,255,255,0.06);
@@ -123,6 +125,8 @@
       color: #dcfce7;
       line-height: 1;
     }
+
+    .level-value { color: #fde68a; }
 
     .canvas-shell {
       position: relative;
@@ -194,15 +198,10 @@
 
     .control-btn:active,
     .primary-btn:active,
-    .secondary-btn:active {
-      transform: scale(0.96);
-    }
-
+    .secondary-btn:active { transform: scale(0.96); }
     .control-btn:hover,
     .primary-btn:hover,
-    .secondary-btn:hover {
-      filter: brightness(1.05);
-    }
+    .secondary-btn:hover { filter: brightness(1.05); }
 
     .up { grid-column: 2; grid-row: 1; }
     .left { grid-column: 1; grid-row: 2; }
@@ -245,17 +244,17 @@
     @media (max-width: 480px) {
       .card { padding: 14px; border-radius: 22px; }
       .header { align-items: stretch; flex-direction: column; }
-      .score-box { width: 100%; }
+      .status-bar {
+        width: 100%;
+        min-width: 0;
+      }
       h1 { font-size: 28px; }
       .mobile-controls {
         grid-template-columns: repeat(3, minmax(74px, 1fr));
         width: 100%;
         max-width: 280px;
       }
-      .action-row {
-        flex-direction: row;
-        width: 100%;
-      }
+      .action-row { width: 100%; }
       .primary-btn, .secondary-btn {
         flex: 1;
         min-width: 0;
@@ -268,13 +267,19 @@
     <div class="card">
       <div class="header">
         <div class="title-box">
-          <div class="badge">移动版已优化</div>
-          <h1>老何</h1>
-          <div class="subtitle">滑动、点按都能控。今天别让老何撞墙。</div>
+          <div class="badge">移动版 + 关卡模式</div>
+          <h1>小阳</h1>
+          <div class="subtitle">滑动、点按都能控。关卡越高，速度越疯。</div>
         </div>
-        <div class="score-box">
-          <div class="score-label">当前分数</div>
-          <div class="score-value" id="score">0</div>
+        <div class="status-bar">
+          <div class="score-box">
+            <div class="score-label">当前分数</div>
+            <div class="score-value" id="score">0</div>
+          </div>
+          <div class="score-box">
+            <div class="score-label">当前关卡</div>
+            <div class="score-value level-value" id="level">1</div>
+          </div>
         </div>
       </div>
 
@@ -282,7 +287,7 @@
         <canvas id="game" width="520" height="520"></canvas>
       </div>
 
-      <div class="tips">电脑：方向键 / WASD。手机：在棋盘上滑动，或者点下方方向键。暂停后可继续，不会把老何当场开除。</div>
+      <div class="tips">电脑：方向键 / WASD。手机：在棋盘上滑动，或者点下方方向键。每 50 分升 1 关，小阳会越来越难伺候。</div>
 
       <div class="controls-panel">
         <div class="mobile-controls">
@@ -306,6 +311,7 @@
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
     const scoreEl = document.getElementById('score');
+    const levelEl = document.getElementById('level');
     const restartBtn = document.getElementById('restart');
     const pauseBtn = document.getElementById('pauseBtn');
     const dirButtons = document.querySelectorAll('[data-dir]');
@@ -313,8 +319,11 @@
     const gridSize = 20;
     const tileCount = canvas.width / gridSize;
     const SWIPE_THRESHOLD = 24;
+    const baseSpeed = 135;
+    const minSpeed = 55;
+    const levelStepScore = 50;
 
-    let snake, direction, nextDirection, food, score, gameOver, paused, speed, loop;
+    let snake, direction, nextDirection, food, score, level, gameOver, paused, speed, loop;
     let touchStartX = 0;
     let touchStartY = 0;
 
@@ -328,15 +337,21 @@
       nextDirection = { x: 1, y: 0 };
       food = spawnFood();
       score = 0;
+      level = 1;
       gameOver = false;
       paused = false;
-      speed = 120;
+      speed = baseSpeed;
       scoreEl.textContent = score;
+      levelEl.textContent = level;
       pauseBtn.textContent = '暂停';
 
+      restartLoop();
+      draw();
+    }
+
+    function restartLoop() {
       if (loop) clearInterval(loop);
       loop = setInterval(update, speed);
-      draw();
     }
 
     function spawnFood() {
@@ -363,6 +378,16 @@
       paused = !paused;
       pauseBtn.textContent = paused ? '继续' : '暂停';
       draw();
+    }
+
+    function updateLevel() {
+      const nextLevel = Math.floor(score / levelStepScore) + 1;
+      if (nextLevel !== level) {
+        level = nextLevel;
+        levelEl.textContent = level;
+        speed = Math.max(minSpeed, baseSpeed - (level - 1) * 10);
+        restartLoop();
+      }
     }
 
     function update() {
@@ -393,12 +418,7 @@
         score += 10;
         scoreEl.textContent = score;
         food = spawnFood();
-
-        if (speed > 60) {
-          speed -= 4;
-          clearInterval(loop);
-          loop = setInterval(update, speed);
-        }
+        updateLevel();
       } else {
         snake.pop();
       }
@@ -465,13 +485,30 @@
       }
     }
 
+    function drawLevelBadge() {
+      ctx.save();
+      ctx.fillStyle = 'rgba(251, 191, 36, 0.18)';
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.6)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(12, 12, 86, 34, 12);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#fde68a';
+      ctx.font = 'bold 16px Microsoft YaHei';
+      ctx.textAlign = 'left';
+      ctx.fillText(`关卡 ${level}`, 24, 34);
+      ctx.restore();
+    }
+
     function draw() {
       drawBoard();
       drawFood();
       drawSnake();
+      drawLevelBadge();
 
-      if (paused && !gameOver) drawOverlay('已暂停', '点继续，老何原地待命');
-      if (gameOver) drawOverlay('老何没了', '点重新开始，再给他一次机会');
+      if (paused && !gameOver) drawOverlay('已暂停', '点继续，小阳先缓一口气');
+      if (gameOver) drawOverlay('小阳撞了', `本局 ${score} 分 · 第 ${level} 关`);
     }
 
     document.addEventListener('keydown', (e) => {
