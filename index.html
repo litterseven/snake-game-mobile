@@ -5,125 +5,300 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>老何</title>
   <style>
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    :root {
+      --bg-1: #07111f;
+      --bg-2: #0f172a;
+      --card: rgba(15, 23, 42, 0.78);
+      --line: rgba(255, 255, 255, 0.1);
+      --text: #f8fafc;
+      --muted: #cbd5e1;
+      --green: #22c55e;
+      --green-2: #4ade80;
+      --green-3: #166534;
+      --accent: #38bdf8;
+      --danger: #fb7185;
+      --shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
     body {
       margin: 0;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #111827, #1f2937);
+      padding: 18px 14px;
+      color: var(--text);
       font-family: "Microsoft YaHei", sans-serif;
-      color: #fff;
+      background:
+        radial-gradient(circle at top, rgba(56, 189, 248, 0.18), transparent 30%),
+        radial-gradient(circle at bottom, rgba(34, 197, 94, 0.14), transparent 28%),
+        linear-gradient(160deg, var(--bg-1), var(--bg-2));
       touch-action: manipulation;
     }
+
     .wrap {
-      width: min(94vw, 520px);
-      text-align: center;
-      padding: 16px 0;
+      width: min(96vw, 560px);
     }
+
+    .card {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      padding: 18px;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.08), transparent 30%, transparent 70%, rgba(74, 222, 128, 0.08));
+      pointer-events: none;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .title-box {
+      text-align: left;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      color: #d1fae5;
+      background: rgba(34, 197, 94, 0.16);
+      border: 1px solid rgba(74, 222, 128, 0.25);
+      margin-bottom: 8px;
+    }
+
     h1 {
-      margin: 0 0 12px;
-      font-size: 30px;
+      margin: 0;
+      font-size: 32px;
       letter-spacing: 2px;
     }
-    .panel {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
-      padding: 10px 14px;
-      border-radius: 12px;
-      background: rgba(255,255,255,0.08);
-      backdrop-filter: blur(8px);
+
+    .subtitle {
+      margin-top: 6px;
+      font-size: 13px;
+      color: var(--muted);
     }
-    .tips {
-      margin: 10px 0 14px;
-      font-size: 14px;
-      color: #d1d5db;
-      line-height: 1.5;
+
+    .score-box {
+      min-width: 110px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      text-align: center;
     }
+
+    .score-label {
+      font-size: 12px;
+      color: #cbd5e1;
+      margin-bottom: 4px;
+    }
+
+    .score-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #dcfce7;
+      line-height: 1;
+    }
+
+    .canvas-shell {
+      position: relative;
+      z-index: 1;
+      border-radius: 24px;
+      padding: 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
     canvas {
+      display: block;
       width: 100%;
       max-width: 520px;
       aspect-ratio: 1 / 1;
-      background: #0b1220;
-      border: 2px solid rgba(255,255,255,0.15);
-      border-radius: 16px;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+      background: #08111d;
+      border-radius: 18px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
       touch-action: none;
     }
-    .mobile-controls {
-      margin-top: 14px;
+
+    .tips {
+      position: relative;
+      z-index: 1;
+      margin: 14px 2px 0;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+      text-align: left;
+    }
+
+    .controls-panel {
+      position: relative;
+      z-index: 1;
+      margin-top: 16px;
       display: grid;
-      grid-template-columns: repeat(3, 72px);
-      grid-template-rows: repeat(3, 56px);
-      gap: 8px;
-      justify-content: center;
+      gap: 14px;
+      justify-items: center;
+    }
+
+    .mobile-controls {
+      display: grid;
+      grid-template-columns: repeat(3, 78px);
+      grid-template-rows: repeat(2, 60px);
+      gap: 10px;
       user-select: none;
     }
-    .mobile-controls button,
-    .action-row button {
+
+    .control-btn,
+    .primary-btn,
+    .secondary-btn {
       border: none;
-      border-radius: 12px;
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-      font-size: 22px;
-      font-weight: bold;
+      color: white;
       cursor: pointer;
+      font-family: inherit;
+      transition: transform 0.12s ease, filter 0.12s ease, background 0.12s ease;
       touch-action: manipulation;
     }
-    .mobile-controls button:active,
-    .action-row button:active {
-      transform: scale(0.96);
-      background: rgba(255,255,255,0.2);
+
+    .control-btn {
+      border-radius: 18px;
+      font-size: 26px;
+      font-weight: 700;
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
     }
+
+    .control-btn:active,
+    .primary-btn:active,
+    .secondary-btn:active {
+      transform: scale(0.96);
+    }
+
+    .control-btn:hover,
+    .primary-btn:hover,
+    .secondary-btn:hover {
+      filter: brightness(1.05);
+    }
+
     .up { grid-column: 2; grid-row: 1; }
     .left { grid-column: 1; grid-row: 2; }
     .down { grid-column: 2; grid-row: 2; }
     .right { grid-column: 3; grid-row: 2; }
+
     .action-row {
-      margin-top: 10px;
       display: flex;
-      justify-content: center;
       gap: 10px;
+      width: 100%;
+      justify-content: center;
     }
-    .action-row button,
-    #restart {
-      padding: 10px 16px;
-      font-size: 14px;
-      background: #22c55e;
+
+    .primary-btn,
+    .secondary-btn {
+      min-width: 118px;
+      padding: 12px 18px;
+      border-radius: 16px;
+      font-size: 15px;
+      font-weight: 600;
     }
-    .action-row button.secondary {
-      background: #334155;
+
+    .primary-btn {
+      background: linear-gradient(180deg, var(--green-2), var(--green));
+      box-shadow: 0 12px 24px rgba(34, 197, 94, 0.24);
     }
-    #restart:hover,
-    .action-row button:hover { filter: brightness(1.05); }
-    @media (min-width: 700px) {
-      .mobile-controls { grid-template-columns: repeat(3, 64px); }
+
+    .secondary-btn {
+      background: linear-gradient(180deg, #334155, #1e293b);
+      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.3);
+    }
+
+    .footer-note {
+      margin-top: 14px;
+      text-align: center;
+      font-size: 12px;
+      color: rgba(226, 232, 240, 0.72);
+    }
+
+    @media (max-width: 480px) {
+      .card { padding: 14px; border-radius: 22px; }
+      .header { align-items: stretch; flex-direction: column; }
+      .score-box { width: 100%; }
+      h1 { font-size: 28px; }
+      .mobile-controls {
+        grid-template-columns: repeat(3, minmax(74px, 1fr));
+        width: 100%;
+        max-width: 280px;
+      }
+      .action-row {
+        flex-direction: row;
+        width: 100%;
+      }
+      .primary-btn, .secondary-btn {
+        flex: 1;
+        min-width: 0;
+      }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>老何</h1>
-    <div class="panel">
-      <div>分数：<span id="score">0</span></div>
-      <button id="restart">重新开始</button>
-    </div>
-    <canvas id="game" width="520" height="520"></canvas>
-    <div class="tips">电脑可用方向键 / WASD。手机支持滑动，也能点下面方向键。</div>
+    <div class="card">
+      <div class="header">
+        <div class="title-box">
+          <div class="badge">移动版已优化</div>
+          <h1>老何</h1>
+          <div class="subtitle">滑动、点按都能控。今天别让老何撞墙。</div>
+        </div>
+        <div class="score-box">
+          <div class="score-label">当前分数</div>
+          <div class="score-value" id="score">0</div>
+        </div>
+      </div>
 
-    <div class="mobile-controls">
-      <button class="up" data-dir="up">↑</button>
-      <button class="left" data-dir="left">←</button>
-      <button class="down" data-dir="down">↓</button>
-      <button class="right" data-dir="right">→</button>
-    </div>
+      <div class="canvas-shell">
+        <canvas id="game" width="520" height="520"></canvas>
+      </div>
 
-    <div class="action-row">
-      <button id="pauseBtn" class="secondary">暂停</button>
+      <div class="tips">电脑：方向键 / WASD。手机：在棋盘上滑动，或者点下方方向键。暂停后可继续，不会把老何当场开除。</div>
+
+      <div class="controls-panel">
+        <div class="mobile-controls">
+          <button class="control-btn up" data-dir="up" aria-label="向上">↑</button>
+          <button class="control-btn left" data-dir="left" aria-label="向左">←</button>
+          <button class="control-btn down" data-dir="down" aria-label="向下">↓</button>
+          <button class="control-btn right" data-dir="right" aria-label="向右">→</button>
+        </div>
+
+        <div class="action-row">
+          <button id="pauseBtn" class="secondary-btn">暂停</button>
+          <button id="restart" class="primary-btn">重新开始</button>
+        </div>
+      </div>
+
+      <div class="footer-note">GitHub Pages 自动发布中</div>
     </div>
   </div>
 
@@ -232,12 +407,12 @@
     }
 
     function drawBoard() {
-      ctx.fillStyle = '#0b1220';
+      ctx.fillStyle = '#08111d';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       for (let x = 0; x < tileCount; x++) {
         for (let y = 0; y < tileCount; y++) {
-          ctx.fillStyle = (x + y) % 2 === 0 ? '#0f172a' : '#111827';
+          ctx.fillStyle = (x + y) % 2 === 0 ? '#0b1524' : '#0f1b2d';
           ctx.fillRect(x * gridSize, y * gridSize, gridSize - 1, gridSize - 1);
         }
       }
@@ -249,24 +424,35 @@
         ctx.beginPath();
         ctx.roundRect(part.x * gridSize + 1, part.y * gridSize + 1, gridSize - 3, gridSize - 3, 6);
         ctx.fill();
+
+        if (index === 0) {
+          ctx.fillStyle = '#052e16';
+          ctx.beginPath();
+          ctx.arc(part.x * gridSize + 7, part.y * gridSize + 8, 2, 0, Math.PI * 2);
+          ctx.arc(part.x * gridSize + 13, part.y * gridSize + 8, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
       });
     }
 
     function drawFood() {
-      ctx.fillStyle = '#ef4444';
+      ctx.fillStyle = '#fb7185';
       ctx.beginPath();
       ctx.arc(
         food.x * gridSize + gridSize / 2,
         food.y * gridSize + gridSize / 2,
-        gridSize / 2.6,
+        gridSize / 2.7,
         0,
         Math.PI * 2
       );
       ctx.fill();
+
+      ctx.fillStyle = '#86efac';
+      ctx.fillRect(food.x * gridSize + 9, food.y * gridSize + 3, 3, 5);
     }
 
     function drawOverlay(text, subText = '') {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.fillStyle = 'rgba(3, 7, 18, 0.56)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = '#fff';
       ctx.font = 'bold 36px Microsoft YaHei';
@@ -284,8 +470,8 @@
       drawFood();
       drawSnake();
 
-      if (paused && !gameOver) drawOverlay('已暂停', '点继续或按空格恢复');
-      if (gameOver) drawOverlay('老何没了', '点重新开始，再救他一局');
+      if (paused && !gameOver) drawOverlay('已暂停', '点继续，老何原地待命');
+      if (gameOver) drawOverlay('老何没了', '点重新开始，再给他一次机会');
     }
 
     document.addEventListener('keydown', (e) => {
