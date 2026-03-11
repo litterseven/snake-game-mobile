@@ -2,10 +2,10 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>贪吃蛇</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>老何</title>
   <style>
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
       margin: 0;
       min-height: 100vh;
@@ -15,19 +15,23 @@
       background: linear-gradient(135deg, #111827, #1f2937);
       font-family: "Microsoft YaHei", sans-serif;
       color: #fff;
+      touch-action: manipulation;
     }
     .wrap {
-      width: min(92vw, 520px);
+      width: min(94vw, 520px);
       text-align: center;
+      padding: 16px 0;
     }
     h1 {
       margin: 0 0 12px;
-      font-size: 28px;
+      font-size: 30px;
+      letter-spacing: 2px;
     }
     .panel {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 12px;
       margin-bottom: 12px;
       padding: 10px 14px;
       border-radius: 12px;
@@ -38,6 +42,7 @@
       margin: 10px 0 14px;
       font-size: 14px;
       color: #d1d5db;
+      line-height: 1.5;
     }
     canvas {
       width: 100%;
@@ -47,28 +52,79 @@
       border: 2px solid rgba(255,255,255,0.15);
       border-radius: 16px;
       box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+      touch-action: none;
     }
-    button {
+    .mobile-controls {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(3, 72px);
+      grid-template-rows: repeat(3, 56px);
+      gap: 8px;
+      justify-content: center;
+      user-select: none;
+    }
+    .mobile-controls button,
+    .action-row button {
       border: none;
-      padding: 10px 16px;
-      border-radius: 10px;
-      background: #22c55e;
-      color: white;
-      font-size: 14px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 22px;
+      font-weight: bold;
       cursor: pointer;
+      touch-action: manipulation;
     }
-    button:hover { background: #16a34a; }
+    .mobile-controls button:active,
+    .action-row button:active {
+      transform: scale(0.96);
+      background: rgba(255,255,255,0.2);
+    }
+    .up { grid-column: 2; grid-row: 1; }
+    .left { grid-column: 1; grid-row: 2; }
+    .down { grid-column: 2; grid-row: 2; }
+    .right { grid-column: 3; grid-row: 2; }
+    .action-row {
+      margin-top: 10px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+    .action-row button,
+    #restart {
+      padding: 10px 16px;
+      font-size: 14px;
+      background: #22c55e;
+    }
+    .action-row button.secondary {
+      background: #334155;
+    }
+    #restart:hover,
+    .action-row button:hover { filter: brightness(1.05); }
+    @media (min-width: 700px) {
+      .mobile-controls { grid-template-columns: repeat(3, 64px); }
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>贪吃蛇</h1>
+    <h1>老何</h1>
     <div class="panel">
       <div>分数：<span id="score">0</span></div>
       <button id="restart">重新开始</button>
     </div>
     <canvas id="game" width="520" height="520"></canvas>
-    <div class="tips">方向键 / WASD 控制，空格暂停</div>
+    <div class="tips">电脑可用方向键 / WASD。手机支持滑动，也能点下面方向键。</div>
+
+    <div class="mobile-controls">
+      <button class="up" data-dir="up">↑</button>
+      <button class="left" data-dir="left">←</button>
+      <button class="down" data-dir="down">↓</button>
+      <button class="right" data-dir="right">→</button>
+    </div>
+
+    <div class="action-row">
+      <button id="pauseBtn" class="secondary">暂停</button>
+    </div>
   </div>
 
   <script>
@@ -76,11 +132,16 @@
     const ctx = canvas.getContext('2d');
     const scoreEl = document.getElementById('score');
     const restartBtn = document.getElementById('restart');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const dirButtons = document.querySelectorAll('[data-dir]');
 
     const gridSize = 20;
     const tileCount = canvas.width / gridSize;
+    const SWIPE_THRESHOLD = 24;
 
     let snake, direction, nextDirection, food, score, gameOver, paused, speed, loop;
+    let touchStartX = 0;
+    let touchStartY = 0;
 
     function initGame() {
       snake = [
@@ -96,6 +157,7 @@
       paused = false;
       speed = 120;
       scoreEl.textContent = score;
+      pauseBtn.textContent = '暂停';
 
       if (loop) clearInterval(loop);
       loop = setInterval(update, speed);
@@ -111,6 +173,21 @@
         };
       } while (snake && snake.some(part => part.x === newFood.x && part.y === newFood.y));
       return newFood;
+    }
+
+    function setDirection(dir) {
+      const base = nextDirection;
+      if (dir === 'up' && base.y !== 1) nextDirection = { x: 0, y: -1 };
+      if (dir === 'down' && base.y !== -1) nextDirection = { x: 0, y: 1 };
+      if (dir === 'left' && base.x !== 1) nextDirection = { x: -1, y: 0 };
+      if (dir === 'right' && base.x !== -1) nextDirection = { x: 1, y: 0 };
+    }
+
+    function togglePause() {
+      if (gameOver) return;
+      paused = !paused;
+      pauseBtn.textContent = paused ? '继续' : '暂停';
+      draw();
     }
 
     function update() {
@@ -130,6 +207,7 @@
 
       if (hitWall || hitSelf) {
         gameOver = true;
+        pauseBtn.textContent = '暂停';
         draw();
         return;
       }
@@ -206,26 +284,54 @@
       drawFood();
       drawSnake();
 
-      if (paused && !gameOver) drawOverlay('已暂停', '按空格继续');
-      if (gameOver) drawOverlay('游戏结束', '点重新开始，再战一局');
+      if (paused && !gameOver) drawOverlay('已暂停', '点继续或按空格恢复');
+      if (gameOver) drawOverlay('老何没了', '点重新开始，再救他一局');
     }
 
     document.addEventListener('keydown', (e) => {
       const key = e.key.toLowerCase();
 
       if (key === ' ' || e.code === 'Space') {
-        if (!gameOver) paused = !paused;
-        draw();
+        togglePause();
         return;
       }
 
-      if ((key === 'arrowup' || key === 'w') && direction.y !== 1) nextDirection = { x: 0, y: -1 };
-      if ((key === 'arrowdown' || key === 's') && direction.y !== -1) nextDirection = { x: 0, y: 1 };
-      if ((key === 'arrowleft' || key === 'a') && direction.x !== 1) nextDirection = { x: -1, y: 0 };
-      if ((key === 'arrowright' || key === 'd') && direction.x !== -1) nextDirection = { x: 1, y: 0 };
+      if (key === 'arrowup' || key === 'w') setDirection('up');
+      if (key === 'arrowdown' || key === 's') setDirection('down');
+      if (key === 'arrowleft' || key === 'a') setDirection('left');
+      if (key === 'arrowright' || key === 'd') setDirection('right');
+    });
+
+    canvas.addEventListener('touchstart', (e) => {
+      const touch = e.touches[0];
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+    }, { passive: true });
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', (e) => {
+      const touch = e.changedTouches[0];
+      const dx = touch.clientX - touchStartX;
+      const dy = touch.clientY - touchStartY;
+
+      if (Math.abs(dx) < SWIPE_THRESHOLD && Math.abs(dy) < SWIPE_THRESHOLD) return;
+
+      if (Math.abs(dx) > Math.abs(dy)) {
+        setDirection(dx > 0 ? 'right' : 'left');
+      } else {
+        setDirection(dy > 0 ? 'down' : 'up');
+      }
+    }, { passive: true });
+
+    dirButtons.forEach((btn) => {
+      btn.addEventListener('click', () => setDirection(btn.dataset.dir));
     });
 
     restartBtn.addEventListener('click', initGame);
+    pauseBtn.addEventListener('click', togglePause);
 
     initGame();
   </script>
